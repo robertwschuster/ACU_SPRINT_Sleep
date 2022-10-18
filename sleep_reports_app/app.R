@@ -129,7 +129,7 @@ server <- function(input, output) {
       } else {
         temp <- './www/Report template.xlsx'
       }
-      saveWorkbook(sleepReport(getData()[[input$subSelect]], temp), file = file)
+      saveWorkbook(sleepReport(getData(), temp), file = file)
     }
   )
 }
