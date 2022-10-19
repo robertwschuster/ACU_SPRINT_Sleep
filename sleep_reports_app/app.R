@@ -73,7 +73,8 @@ server <- function(input, output) {
       subjects <- ""
     } else {
       # remove numbers and punctuation from filenames
-      subjects <- unique(gsub('[[:digit:]]+', '', sub("([A-Za-z]+_[A-Za-z0-9]+).*", "\\1", basename(input$file$name))))
+      # subjects <- unique(gsub('[[:digit:]]+', '', sub("([A-Za-z]+_[A-Za-z0-9]+).*", "\\1", basename(input$file$name))))
+      subjects <- unique(sub("^([^_]*_[^_]*).*", "\\1", basename(input$file$name)))
       for (s in 1:length(subjects)) {
         if (grepl("_",substr(subjects[s],nchar(subjects[s]),nchar(subjects[s])))) {
           subjects[s] <- gsub('[[:punct:]]', '', subjects[s])
