@@ -102,38 +102,22 @@ timeInBed <- function(df,CS,CE) {
     rest <- which(df$`Interval Type` == 'REST' & (df$`End Date`-1) >= CS & (df$`End Date`-1) <= CE)
     sleep <- which(df$`Interval Type` == 'SLEEP' & (df$`End Date`-1) >= CS & (df$`End Date`-1) <= CE)
   }
+  funs <- list(mean, min, max)
   # Total time in bed (h:min)
-  tib[1,1] <- hm(mean(df$Duration[rest], na.rm = T))
-  tib[1,2] <- hm(min(df$Duration[rest], na.rm = T))
-  tib[1,3] <- hm(max(df$Duration[rest], na.rm = T))
-  
+  tib[1,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = df$Duration[rest])
   # Time to fall asleep (h:min)
   if ('Onset Latency' %in% colnames(df)) {
-    tib[2,1] <- hm(mean(df$`Onset Latency`[sleep], na.rm = T))
-    tib[2,2] <- hm(min(df$`Onset Latency`[sleep], na.rm = T))
-    tib[2,3] <- hm(max(df$`Onset Latency`[sleep], na.rm = T))
+    tib[2,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = df$`Onset Latency`[sleep])
   }
-  
   # Sleep per night (h:min)
-  tib[3,1] <- hm(mean(df$`Sleep Time`[sleep], na.rm = T))
-  tib[3,2] <- hm(min(df$`Sleep Time`[sleep], na.rm = T))
-  tib[3,3] <- hm(max(df$`Sleep Time`[sleep], na.rm = T))
-  
+  tib[3,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = df$`Sleep Time`[sleep])
   # Time awake / light sleep per night (h:min)
-  tib[4,1] <- hm(mean(df$`Wake Time`[sleep], na.rm = T))
-  tib[4,2] <- hm(min(df$`Wake Time`[sleep], na.rm = T))
-  tib[4,3] <- hm(max(df$`Wake Time`[sleep], na.rm = T))
-  
+  tib[4,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = df$`Wake Time`[sleep])
   # Sleep efficiency (quality - %)
-  tib[5,1] <- round(mean(df$Efficiency[sleep], na.rm = T))
-  tib[5,2] <- round(min(df$Efficiency[sleep], na.rm = T))
-  tib[5,3] <- round(max(df$Efficiency[sleep], na.rm = T))
-  
+  tib[5,1:3] <- sapply(funs, function(fun, x) round(fun(x, na.rm = T)), x = df$Efficiency[sleep])
   # WASO (h:min)
   if ('WASO' %in% colnames(df)) {
-    tib[6,1] <- hm(mean(df$WASO[sleep], na.rm = T))
-    tib[6,2] <- hm(min(df$WASO[sleep], na.rm = T))
-    tib[6,3] <- hm(max(df$WASO[sleep], na.rm = T))
+    tib[6,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = df$WASO[sleep])
   }
   return(tib)
 }
@@ -209,9 +193,6 @@ for (f in 1:length(flist)) {
   stats[[subjects[f]]] <- stats[[subjects[f]]][
     rowSums(is.na(stats[[subjects[f]]][,3:ncol(stats[[subjects[f]]])])) != ncol(stats[[subjects[f]]])-2,] # remove rows that are all NA
   
-  # Timezone [WIP]
-  # tzd <- data[which(data[,1] == 'Time Zone:'),3]
-  
   # convert columns to the right classes
   stats[[subjects[f]]][c(2,7:18)] <- sapply(stats[[subjects[f]]][c(2,7:18)],as.numeric)
 }
@@ -279,9 +260,6 @@ for (s in names(stats)) {
   tibC2P1 <- timeInBed(stats[[s]],C2[1],C2P2-1)
   tibC2P2 <- timeInBed(stats[[s]],C2P2,C2P3-1)
   tibC2P3 <- timeInBed(stats[[s]],C2P3,C2[2])
-  
-  # Your subjective sleep rating
-  # TODO
   
   
   # Sleep graphs data ----------------------------------------------------------------------

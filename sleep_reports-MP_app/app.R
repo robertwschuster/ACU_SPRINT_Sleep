@@ -18,7 +18,7 @@ source("sleep_reports-MP_functions.R")
 ui <- fluidPage(
   theme = shinytheme("spacelab"),
   # Application title
-  titlePanel(img(src = "ACU_logo.png", height = 70, width =200)),
+  titlePanel(img(src = "ACU_logo.png", height = 70, width = 200)),
   
   # Sidebar
   sidebarLayout(
