@@ -1,6 +1,6 @@
 #-----------------------------------------------------------------------------------------
 #
-# Load and analyze somfit sleep tracking data (*.docx files)
+# Load and analyze somfit sleep tracking data (*.rtf files)
 # Robert Schuster (ACU SPRINT)
 # October 2022
 #
@@ -87,6 +87,25 @@ sleepMetrics <- function(data) {
   df <- list()
   # start date
   df$`Start date` <- sDate <- somfind(data,'Study Date','Referrer',function(x) as.Date(x,format = '%d/%m/%Y'))
+  # EEG impedence (right and left)
+  df$`EEG impedance (right)` <- somfind(data,'EEG Impedance \u2013 Right Rating','Study Quality')
+  df$`EEG impedance (left)` <- somfind(data,'EEG Impedance \u2013 Left Rating','Study Quality')
+  # Tttal data received - value (%) and rating
+  df$`Total data received (%)` <- somfind(data,'Total Data Received','Study Quality',as.numeric)
+  df$`Total data received (rating)`  <- somfind(data,'Total Data Received Rating','Study Quality')
+  # total scorable EEG - value (%) and rating
+  df$`Total scorable EEG (%)` <- somfind(data,'Total Scorable EEG','Study Quality',as.numeric)
+  df$`Total scorable EEG (rating)` <- somfind(data,'Total Scorable EEG Rating','Study Quality')
+  # Somfit battery - starting level
+  df$`Somfit battery start level (%)` <- somfind(data,'Somfit Start Battery Level ','Study Quality',as.numeric)
+  # phone start and end battery level (%)
+  df$`Phone battery start level (%)` <- somfind(data,'Phone Start Battery Level','Device',as.numeric)
+  df$`Phone battery end level (%)` <- somfind(data,'Phone End Battery Level','Device',as.numeric)
+  # Somfit device
+  df$`Somfit device` <- somfind(data,'Somfit Device','Device')
+  # app start and end date/time
+  df$`App start date/time` <- somfind(data,'App Start Date/Time','Device',function(x) as.POSIXct(x, format = '%Y/%m/%d %H-%M-%S', tz = 'GMT'))
+  df$`App end date/time` <- somfind(data,'App End Date/Time ','Device',function(x) as.POSIXct(x, format = '%Y/%m/%d %H:%M:%S', tz = 'GMT'))
   # start recording
   sr <- somfind(data,'Start Recording','Referrer',function(x) as.POSIXct(x, format = '%H:%M:%S'))
   df$`Start recording` <- sr <- as.POSIXct(sub("\\S+", sDate, sr), tz = 'GMT')
@@ -113,17 +132,20 @@ sleepMetrics <- function(data) {
   df$`Total recording time (min)` <- somfind(data,'Total Recording Time (TRT)','Referrer',function(x) as.numeric(x) %>% `/`(60))
   # sleep stages
   # time (mins)
-  stages <- c('N1 Sleep Time','N2 Sleep Time','N3 Sleep Time','REM Sleep Time','Unsure Time')
-  cnames <- c('N1/N2 (min)','N2 (min)','N3 (min)','REM (min)','Unscored (min)')
+  stages <- c('Time Awake during sleep Period','N1 Sleep Time','N2 Sleep Time','N3 Sleep Time','REM Sleep Time',
+              'Unsure Time')
+  cnames <- c('Wake (min)','N1/N2 (min)','N2 (min)','N3 (min)','REM (min)','Unscored (min)')
   for (n in 1:length(stages)) {
     df[[cnames[n]]] <- somfind(data,stages[n],'Sleep',function(x) as.numeric(x) %>% `/`(60))
   }
   # percentage
+  df$`Wake (%)` <- somfind(data,'Total Recording Time (TRT)','Referrer',as.numeric)/df$`Time available for sleep (min)`*100
   stages <- c('Stage 1 / N1 %','Stage 2 / N2 %','Stage 3 / N3 %','REM sleep %')
   cnames <- c('N1/N2 (%)','N2 (%)','N3 (%)','REM (%)')
   for (n in 1:length(stages)) {
     df[[cnames[n]]] <- somfind(data,stages[n],'Sleep',as.numeric)
   }
+  df$`Unscored (%)` <- df$`Unscored (min)`/df$`Time available for sleep (min)`*100
   # awakenings
   df$`Awakenings (total)` <- somfind(data,'Number of awakenings','Sleep',as.numeric)
   df$`Awakenings (per hour)` <- somfind(data,'Awakenings Index','Sleep',as.numeric)
@@ -137,25 +159,6 @@ sleepMetrics <- function(data) {
   df$`Pulse (mean)` <- somfind(data,'Pulse Rate (Average)','Pulse Rate / Respiratory Rate / HRV',as.numeric)
   df$`Pulse (min)` <- somfind(data,'Pulse Rate (Lowest)','Pulse Rate / Respiratory Rate / HRV',as.numeric)
   df$`Pulse (max)` <- somfind(data,'Pulse Rate (Highest)','Pulse Rate / Respiratory Rate / HRV',as.numeric)
-  # EEG impedence (right and left)
-  df$`EEG impedance (right)` <- somfind(data,'EEG Impedance – Right Rating','Study Quality')
-  df$`EEG impedance (left)` <- somfind(data,'EEG Impedance – Left Rating','Study Quality')
-  # Tttal data received - value (%) and rating
-  df$`Total data received (%)` <- somfind(data,'Total Data Received','Study Quality',as.numeric)
-  df$`Total data received (rating)`  <- somfind(data,'Total Data Received Rating','Study Quality')
-  # total scorable EEG - value (%) and rating
-  df$`Total scorable EEG (%)` <- somfind(data,'Total Scorable EEG','Study Quality',as.numeric)
-  df$`Total scorable EEG (rating)` <- somfind(data,'Total Scorable EEG Rating','Study Quality')
-  # Somfit battery - starting level
-  df$`Somfit battery start level (%)` <- somfind(data,'Somfit Start Battery Level ','Study Quality',as.numeric)
-  # phone start and end battery level (%)
-  df$`Phone battery start level (%)` <- somfind(data,'Phone Start Battery Level','Device',as.numeric)
-  df$`Phone battery end level (%)` <- somfind(data,'Phone End Battery Level','Device',as.numeric)
-  # Somfit device
-  df$`Somfit device` <- somfind(data,'Somfit Device','Device')
-  # app start and end date/time
-  df$`App start date/time` <- somfind(data,'App Start Date/Time','Device',function(x) as.POSIXct(x, format = '%Y/%m/%d %H-%M-%S', tz = 'GMT'))
-  df$`App end date/time` <- somfind(data,'App End Date/Time ','Device',function(x) as.POSIXct(x, format = '%Y/%m/%d %H:%M:%S', tz = 'GMT'))
   
   # combine N1 and N2
   df$`N1/N2 (min)` <- df$`N1/N2 (min)` + df$`N2 (min)`
@@ -185,7 +188,7 @@ t2j <- function(times, dates, se) {
 
 
 # Load sleep report excel template -------------------------------------------------------
-srtemp <- "C:/Users/s4548745/Desktop/ACU/ACU_SPRINT_Sleep/Report templates/Report template_somfit.xlsx"
+srtemp <- "C:/Users/s4548745/Desktop/ACU/ACU_SPRINT_Sleep/Report templates/Report template_somfit_MP.xlsx"
 
 if (!file.exists(srtemp)) {
   srtemp <- choose.files(caption = "Select the sleep report template excel file")
@@ -220,10 +223,10 @@ subjects <- names(sfMetrics)
 # Export data to report template ---------------------------------------------------------
 for (s in subjects) {
   # === Summary ===
-  dex <- matrix(0,14,3)
+  dex <- matrix(0,15,3)
   colnames(dex) <- c('Average','Minimum','Maximum')
   rownames(dex) <- c('Bed time','Wake-up time',
-                     'Total time in bed','Total sleep','WASO','Sleep efficiency (quality - %)',
+                     'Total time in bed','Sleep latency','Total sleep','WASO','Sleep efficiency (quality - %)',
                      'Awake (min)','N1/N2 (min)','N3 (min)','REM (min)','Awake (%)','N1/N2 (%)','N3 (%)','REM (%)')
   # replace start or end date with current date
   sr <- as.POSIXct(sub("\\S+", Sys.Date(), as.POSIXct(sfMetrics[[s]]$`Start recording`, origin = .Date(0), tz = 'GMT')), tz = 'GMT')
@@ -234,20 +237,21 @@ for (s in subjects) {
   dex[2,1:3] <- sapply(funs, function(fun, x) format(fun(x), '%I:%M %p'), x = er)
   
   dex[3,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`Total recording time (min)`)
-  dex[4,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`Total sleep time (min)`)
+  dex[4,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`Sleep latency (min)`)
   dex[5,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`WASO (min)`)
-  dex[6,1:3] <- sapply(funs, function(fun, x) round(fun(x, na.rm = T),1), x = sfMetrics[[s]]$`Sleep efficiency (%)`)
+  dex[6,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`Total sleep time (min)`)
+  dex[7,1:3] <- sapply(funs, function(fun, x) round(fun(x, na.rm = T),1), x = sfMetrics[[s]]$`Sleep efficiency (%)`)
   
   awake <- sfMetrics[[s]]$`Time available for sleep (min)` - sfMetrics[[s]]$`Total sleep time (min)`
-  dex[7,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = awake)
   dex[8,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`N1/N2 (min)`)
   dex[9,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`N3 (min)`)
   dex[10,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`REM (min)`)
+  dex[11,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = awake)
   awake <- awake / sfMetrics[[s]]$`Total sleep time (min)` * 100
-  dex[11,1:3] <- sapply(funs, function(fun, x) round(fun(x, na.rm = T)), x = awake)
   dex[12,1:3] <- sapply(funs, function(fun, x) round(fun(x, na.rm = T)), x = sfMetrics[[s]]$`N1/N2 (%)`)
   dex[13,1:3] <- sapply(funs, function(fun, x) round(fun(x, na.rm = T)), x = sfMetrics[[s]]$`N3 (%)`)
   dex[14,1:3] <- sapply(funs, function(fun, x) round(fun(x, na.rm = T)), x = sfMetrics[[s]]$`REM (%)`)
+  dex[15,1:3] <- sapply(funs, function(fun, x) round(fun(x, na.rm = T)), x = awake)
   
   # === Data sheet ===
   sld <- sfMetrics[[s]]
@@ -269,7 +273,7 @@ for (s in subjects) {
   # sleep latency, sleep duration, time awake,
   slf$`Sleep latency (h)` <- sld$`Sleep latency (min)`/60
   slf$`Sleep duration (h)` <- sld$`Total sleep time (min)`/60
-  slf$`Time awake (h)` <- (sld$`Time available for sleep (min)` - sld$`Total sleep time (min)`)/60
+  slf$`WASO (h)` <- sld$`WASO (min)`/60
   # Recommended sleep per night
   slf$`Recommended sleep per night (h)` <- rsn
   # Sleep efficiency and normal efficiency
@@ -281,7 +285,12 @@ for (s in subjects) {
   slf$`Bed time avg` <- mean(slf$`Bed time`, na.rm = T)
   slf$`Wake-up time avg` <- mean(slf$`Wake-up time`, na.rm = T)
   
-  slf <- data.frame(slf)
+  slf$REM <- sld$`REM (min)`/(24*60)
+  slf$`Deep sleep` <- sld$`N1/N2 (min)`/(24*60)
+  slf$`Light sleep` <- sld$`N3 (min)`/(24*60)
+  slf$`Time awake` <- (sld$`Time available for sleep (min)` - sld$`Total sleep time (min)`)/(24*60)
+  
+  slf <- data.frame(slf, check.names = F)
   slf[slf == 0] <- NA
   
   # === Export to report template ===
@@ -292,8 +301,8 @@ for (s in subjects) {
   # Add name and date
   rows  <- getRows(sheets$`Report - Short`)
   cells <- getCells(rows)
-  setCellValue(cells$`6.3`, gsub("_"," ",s))
-  setCellValue(cells$`7.3`, Sys.Date())
+  setCellValue(cells$`5.3`, gsub("_"," ",s))
+  setCellValue(cells$`6.3`, Sys.Date())
   # Add summary table
   addDataFrame(dex, sheets$Summary, startRow = 2, startColumn = 2, col.names = F, row.names = F)
   # Add data for figures
@@ -303,7 +312,7 @@ for (s in subjects) {
   # Force cells to update
   wb$setForceFormulaRecalculation(T)
   # Save the workbook
-  saveWorkbook(wb, paste0(fp,'/',s,'-somfit_sleep_report.xlsx'))
+  saveWorkbook(wb, paste0(fp,'/',s,'-somfit_report_MP.xlsx'))
 }
 
 
