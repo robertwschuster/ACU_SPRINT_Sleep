@@ -160,7 +160,7 @@ importFiles <- function(filepath,filename) {
       # sort data based on 'Interval Type' and 'Start Date'
       stats <- stats[with(stats, order(as.factor(`Interval Type`), as.Date(`Start Date`,'%d/%m/%Y'))),]
       # remove duplicate rows based on 'Interval Type', 'Start Date' and 'End Date'
-      stats <- stats[-which(duplicated(stats[,c('Interval Type','Start Date','End Date')])),]
+      stats <- stats[which(!duplicated(stats[,c('Interval Type','Start Date','End Date')])),]
       # number intervals
       for (f in unique(stats$`Interval Type`)) {
         r <- which(stats$`Interval Type` == f)

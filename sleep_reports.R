@@ -110,7 +110,7 @@ if (any(duplicated(subjects))) {
     stats[[sdup[s]]] <- stats[[sdup[s]]][with(stats[[sdup[s]]], order(as.factor(`Interval Type`),
                                                                       as.Date(`Start Date`,'%d/%m/%Y'))),]
     # remove duplicate rows based on 'Interval Type', 'Start Date' and 'End Date'
-    stats[[sdup[s]]] <- stats[[sdup[s]]][-which(duplicated(stats[[sdup[s]]][,c('Interval Type','Start Date','End Date')])),]
+    stats[[sdup[s]]] <- stats[[sdup[s]]][which(!duplicated(stats[[sdup[s]]][,c('Interval Type','Start Date','End Date')])),]
     # number intervals
     for (f in unique(stats[[sdup[s]]]$`Interval Type`)) {
       r <- which(stats[[sdup[s]]]$`Interval Type` == f)
