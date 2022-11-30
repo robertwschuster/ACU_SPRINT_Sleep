@@ -23,7 +23,7 @@ ui <- fluidPage(
   # Sidebar
   sidebarLayout(
     sidebarPanel(
-      h3("SPRINT Sleep Reports"),
+      h3("SPRINT Actiwatch Sleep Reports"),
       
       fileInput("file", 
                 "Select the files you want to analyse",

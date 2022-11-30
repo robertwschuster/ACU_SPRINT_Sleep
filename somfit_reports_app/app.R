@@ -37,14 +37,16 @@ ui <- fluidPage(
       tags$hr(),
       radioButtons("MPCG", label = "Researcher",
                    choices = list("Madi" = 1, "Riss" = 2), selected = 1),
-      downloadButton("downloadData", "Create sleep report")
+      downloadButton("downloadData", "Create sleep report"),
+      width = 3
     ),
     
     # Performance metrics table and graphs of each rep
     mainPanel(
       uiOutput('subName'),
       tableOutput('results'),
-      uiOutput('plotTabs')
+      uiOutput('plotTabs'),
+      width = 9
     )
   )
 )

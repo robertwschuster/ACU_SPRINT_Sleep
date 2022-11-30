@@ -51,11 +51,28 @@ hm <- function(mins) {
 
 # import and clean up RTF file
 rtf2df <- function(file) {
-  df <- read_rtf(file, row_start = "*|", row_end = "", cell_end = "|")
-  df <- gsub("\\*","", df) # remove asterix
+  df <- read_rtf(file, row_start = "|", row_end = "", cell_end = "|")
+  ug <- grep('\u00d9',df)
+  # if kiloohm ('\u2126) was replaced with U-grave ('\u00d9') assume that en dash ('\u2013) was not split incorrectly,
+  # otherwise assume the opposite
+  if (!identical(ug,integer(0))) {
+    df[ug-1] <- paste0(df[ug-1],'\u2126||')
+    df <- df[-c(ug,ug+1)]
+  } else {
+    ed <- grep('\u2013',df)
+    if (any(diff(ed <= 2))) {
+      minus <- which(diff(ed) <= 2)
+      rp <- gsub('\\|','',paste0(df[ed[minus]],df[ed[minus]+1],df[ed[minus+1]],df[ed[minus+1]+1]))
+      df[ed[minus]-1] <- paste0(df[ed[minus]-1],rp,'|')
+      ed <- ed[-c(minus,minus+1)]
+    }
+    rp <- paste0(sub('\\|','',df[ed]),sub('\\|','',df[ed+1]))
+    df[ed-1] <- paste0(df[ed-1],rp)
+    df <- df[-c(ed,ed+1)]
+  }
   df <- lapply(df, function(x) strsplit(x, split = '\\|')[[1]])
+  df <- Filter(length, df)
   df <- lapply(df, function(x) x[2:length(x)]) # remove empty elements
-  df <- df[lengths(df) == 4] # remove elements that didn't split properly (due to special characters, e.g., kiloohm)
   # convert to dataframe
   df <- data.frame(matrix(unlist(df), nrow = length(df), byrow = T), stringsAsFactors = F)
   colnames(df) <- df[1,]

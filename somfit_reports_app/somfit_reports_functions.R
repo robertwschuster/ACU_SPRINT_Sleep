@@ -45,11 +45,28 @@ hm <- function(mins) {
 
 # import and clean up RTF file
 rtf2df <- function(file) {
-  df <- read_rtf(file, row_start = "*|", row_end = "", cell_end = "|")
-  df <- gsub("\\*","", df) # remove asterix
+  df <- read_rtf(file, row_start = "|", row_end = "", cell_end = "|")
+  ug <- grep('\u00d9',df)
+  # if kiloohm ('\u2126) was replaced with U-grave ('\u00d9') assume that en dash ('\u2013) was not split incorrectly,
+  # otherwise assume the opposite
+  if (!identical(ug,integer(0))) {
+    df[ug-1] <- paste0(df[ug-1],'\u2126||')
+    df <- df[-c(ug,ug+1)]
+  } else {
+    ed <- grep('\u2013',df)
+    if (any(diff(ed <= 2))) {
+      minus <- which(diff(ed) <= 2)
+      rp <- gsub('\\|','',paste0(df[ed[minus]],df[ed[minus]+1],df[ed[minus+1]],df[ed[minus+1]+1]))
+      df[ed[minus]-1] <- paste0(df[ed[minus]-1],rp,'|')
+      ed <- ed[-c(minus,minus+1)]
+    }
+    rp <- paste0(sub('\\|','',df[ed]),sub('\\|','',df[ed+1]))
+    df[ed-1] <- paste0(df[ed-1],rp)
+    df <- df[-c(ed,ed+1)]
+  }
   df <- lapply(df, function(x) strsplit(x, split = '\\|')[[1]])
+  df <- Filter(length, df)
   df <- lapply(df, function(x) x[2:length(x)]) # remove empty elements
-  df <- df[lengths(df) == 4] # remove elements that didn't split properly (due to special characters, e.g., kiloohm)
   # convert to dataframe
   df <- data.frame(matrix(unlist(df), nrow = length(df), byrow = T), stringsAsFactors = F)
   colnames(df) <- df[1,]
@@ -126,19 +143,21 @@ sleepMetrics_MP <- function(data) {
   df$`Total recording time (min)` <- somfind(data,'Total Recording Time (TRT)','Referrer',function(x) as.numeric(x) %>% `/`(60))
   # sleep stages
   # time (mins)
-  stages <- c('Time Awake during sleep Period','N1 Sleep Time','N2 Sleep Time','N3 Sleep Time','REM Sleep Time',
-              'Unsure Time')
-  cnames <- c('Wake (min)','N1/N2 (min)','N2 (min)','N3 (min)','REM (min)','Unscored (min)')
+  stages <- c('Time Awake during sleep Period','N1 Sleep Time','N2 Sleep Time','N1 Sleep Time','N3 Sleep Time',
+              'REM Sleep Time','Unsure Time')
+  cnames <- c('Wake (min)','N1 (min)','N2 (min)','N1/N2 (min)','N3 (min)','REM (min)','Unscored (min)')
   for (n in 1:length(stages)) {
     df[[cnames[n]]] <- somfind(data,stages[n],'Sleep',function(x) as.numeric(x) %>% `/`(60))
   }
+  df$`N1/N2 (min)` <- df$`N1/N2 (min)` + df$`N2 (min)`
   # percentage
   df$`Wake (%)` <- somfind(data,'Total Recording Time (TRT)','Referrer',as.numeric)/df$`Time available for sleep (min)`*100
-  stages <- c('Stage 1 / N1 %','Stage 2 / N2 %','Stage 3 / N3 %','REM sleep %')
-  cnames <- c('N1/N2 (%)','N2 (%)','N3 (%)','REM (%)')
+  stages <- c('Stage 1 / N1 %','Stage 2 / N2 %','Stage 1 / N1 %','Stage 3 / N3 %','REM sleep %')
+  cnames <- c('N1 (%)','N2 (%)','N1/N2 (%)','N3 (%)','REM (%)')
   for (n in 1:length(stages)) {
     df[[cnames[n]]] <- somfind(data,stages[n],'Sleep',as.numeric)
   }
+  df$`N1/N2 (%)` <- df$`N1/N2 (%)` + df$`N2 (%)`
   df$`Unscored (%)` <- df$`Unscored (min)`/df$`Time available for sleep (min)`*100
   # awakenings
   df$`Awakenings (total)` <- somfind(data,'Number of awakenings','Sleep',as.numeric)
@@ -153,11 +172,6 @@ sleepMetrics_MP <- function(data) {
   df$`Pulse (mean)` <- somfind(data,'Pulse Rate (Average)','Pulse Rate / Respiratory Rate / HRV',as.numeric)
   df$`Pulse (min)` <- somfind(data,'Pulse Rate (Lowest)','Pulse Rate / Respiratory Rate / HRV',as.numeric)
   df$`Pulse (max)` <- somfind(data,'Pulse Rate (Highest)','Pulse Rate / Respiratory Rate / HRV',as.numeric)
-  
-  # combine N1 and N2
-  df$`N1/N2 (min)` <- df$`N1/N2 (min)` + df$`N2 (min)`
-  df$`N1/N2 (%)` <- df$`N1/N2 (%)` + df$`N2 (%)`
-  df <- df[!(names(df) %in% c('N2 (min)','N2 (%)'))]
   
   return(data.frame(df,check.names = F))
 }

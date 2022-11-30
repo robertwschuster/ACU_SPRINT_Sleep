@@ -23,7 +23,7 @@ ui <- fluidPage(
   # Sidebar
   sidebarLayout(
     sidebarPanel(
-      h3("SPRINT Sleep Reports"),
+      h3("SPRINT Actiwatch Sleep Reports"),
       
       fileInput("file", 
                 "Select the files you want to analyse",
@@ -51,14 +51,16 @@ ui <- fluidPage(
       #           "OPTIONAL: Select sleep report template file",
       #           multiple = F,
       #           accept = c(".xlsx")),
-      downloadButton("downloadData", "Create sleep report")
+      downloadButton("downloadData", "Create sleep report"),
+      width = 3
     ),
     
     # Performance metrics table and graphs of each rep
     mainPanel(
       uiOutput('subName'),
       tableOutput('results'),
-      uiOutput('plotTabs')
+      uiOutput('plotTabs'),
+      width = 9
     )
   )
 )

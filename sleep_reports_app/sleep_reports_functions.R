@@ -82,7 +82,6 @@ bwt <- function(sld,CS,CE) {
   } else {
     r <- which(sld$Date >= CS & sld$Date <= CE)
   }
-  funs <- list(mean, min, max)
   # Bed time
   df[1,1] <- format(as.POSIXct(Sys.Date() + mean(sld$`Bed time`[r])),'%I:%M %p', tz = 'GMT')
   df[1,2] <- format(as.POSIXct(Sys.Date() + min(sld$`Bed time`[r])),'%I:%M %p', tz = 'GMT')
