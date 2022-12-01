@@ -125,7 +125,10 @@ sleepMetrics <- function(data) {
   df$`App start date/time` <- somfind(data,'App Start Date/Time','Device',function(x) as.POSIXct(x, format = '%Y/%m/%d %H-%M-%S', tz = 'GMT'))
   df$`App end date/time` <- somfind(data,'App End Date/Time ','Device',function(x) as.POSIXct(x, format = '%Y/%m/%d %H:%M:%S', tz = 'GMT'))
   # start recording
-  sr <- somfind(data,'Start Recording','Referrer',function(x) as.POSIXct(x, format = '%H:%M:%S'))
+  sr <- somfind(data,'Start Recording','Referrer',function(x) as.POSIXct(x, format = '%H:%M:%S', tz = 'GMT'))
+  if (as.numeric(julian(sr)) - as.numeric(Sys.Date()) < 0.5) {
+    df$`Start date` <- sDate <- sDate - 1
+  }
   df$`Start recording` <- sr <- as.POSIXct(sub("\\S+", sDate, sr), tz = 'GMT')
   # end recording
   er <- somfind(data,'Stop Recording','Referrer',function(x) as.POSIXct(x, format = '%H:%M:%S'))
@@ -244,12 +247,12 @@ for (s in subjects) {
                      'Total time in bed','Sleep latency','Total sleep','WASO','Sleep efficiency (quality - %)',
                      'Awake (min)','N1/N2 (min)','N3 (min)','REM (min)','Awake (%)','N1/N2 (%)','N3 (%)','REM (%)')
   # replace start or end date with current date
-  sr <- as.POSIXct(sub("\\S+", Sys.Date(), as.POSIXct(sfMetrics[[s]]$`Start recording`, origin = .Date(0), tz = 'GMT')), tz = 'GMT')
-  er <- as.POSIXct(sub("\\S+", Sys.Date(), as.POSIXct(sfMetrics[[s]]$`End recording`, origin = .Date(0), tz = 'GMT')), tz = 'GMT')
+  sr <- t2j(sfMetrics[[s]]$`Start recording`,sfMetrics[[s]]$`Start date`, 's')
+  er <- t2j(sfMetrics[[s]]$`End recording`, sfMetrics[[s]]$`Start date` + 1, 'e')
   
   funs <- list(mean, min, max)
-  dex[1,1:3] <- sapply(funs, function(fun, x) format(fun(x), '%I:%M %p'), x = sr)
-  dex[2,1:3] <- sapply(funs, function(fun, x) format(fun(x), '%I:%M %p'), x = er)
+  dex[1,1:3] <- sapply(funs, function(fun, x) format(as.POSIXct(fun(x)*86400, origin = Sys.Date(), tz = 'GMT'), '%I:%M %p'), x = sr)
+  dex[2,1:3] <- sapply(funs, function(fun, x) format(as.POSIXct(fun(x)*86400, origin = Sys.Date(), tz = 'GMT'), '%I:%M %p'), x = er)
   
   dex[3,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`Total recording time (min)`)
   dex[4,1:3] <- sapply(funs, function(fun, x) hm(fun(x, na.rm = T)), x = sfMetrics[[s]]$`Sleep latency (min)`)
@@ -281,6 +284,11 @@ for (s in subjects) {
   sld$`Sleep offset` <- t2j(sld$`Sleep offset`, edates, 'e')
   
   sld$`Start date` <- as.Date(sld$`Start date`, origin = .Date(0))
+  # account for bed time after midnight
+  if (any(sld$`Lights on` < 0)) {
+    i <- which(sld$`Lights on` < 0)
+    sld$`Lights on`[i] <- sld$`Lights on`[i] + 1
+  }
   
   # === Figure sheet ===
   slf <- list()

@@ -247,7 +247,7 @@ for (s in names(stats)) {
   sdates <- as.Date(sdates, .Date(0))
   edates <- as.Date(edates, .Date(0))
   # Convert bed and wake times to julian (fraction of day)
-  sld$`Bed time` <- sapply(c(1:length(sld$`Bed time`)), function (x)
+  sld$`Bed time` <- sapply(c(1:length(sld$`Bed time`)), function(x)
     as.numeric(julian(as.POSIXct(sld$`Bed time`[x], origin = .Date(0), tz = 'GMT'), origin = sdates[x])))
   sld$`Wake-up time` <- sapply(c(1:length(sld$`Wake-up time`)), function(x)
     as.numeric(julian(as.POSIXct(sld$`Wake-up time`[x], origin = .Date(0), tz = 'GMT'), origin = edates[x])))

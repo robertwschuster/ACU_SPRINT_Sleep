@@ -37,6 +37,10 @@ ui <- fluidPage(
       tags$hr(),
       radioButtons("MPCG", label = "Researcher",
                    choices = list("Madi" = 1, "Riss" = 2), selected = 1),
+      conditionalPanel(
+        condition = "input.MPCG == 1",
+        radioButtons("MPreports", "Report graphs y-axis format", choices = list("Date" = 1, "Text" = 2), selected = 1)
+      ),
       downloadButton("downloadData", "Create sleep report"),
       width = 3
     ),
@@ -108,7 +112,11 @@ server <- function(input, output) {
     },
     content = function(file) {
       if (input$MPCG == 1) {
-        temp <- './www/Report template_somfit_MP.xlsx'
+        if (input$MPreports == 1) {
+          temp <- './www/Report template_somfit_MP.xlsx'
+        } else if (input$MPreports == 2) {
+          temp <- './www/Report template_somfit_MP-TA.xlsx'
+        }
       } else if (input$MPCG == 2) {
         temp <- './www/Report template_somfit_CG.xlsx'
       }

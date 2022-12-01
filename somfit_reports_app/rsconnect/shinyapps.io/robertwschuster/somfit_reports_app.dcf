@@ -5,6 +5,6 @@ account: robertwschuster
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 7710813
-bundleId: 6545313
+bundleId: 6575433
 url: https://robertwschuster.shinyapps.io/somfit_reports_app/
-when: 1669174613.64165
+when: 1669864177.2545
