@@ -20,14 +20,13 @@ if ("xlsx" %in% rownames(installed.packages()) == FALSE) {
   install.packages("xlsx")
 }
 
-if ("ggplot2" %in% rownames(installed.packages()) == FALSE) {
-  install.packages("ggplot2")
+if ("tidyverse" %in% rownames(installed.packages()) == FALSE) {
+  install.packages("tidyverse")
 }
 
 library(tidyverse)
 library(striprtf)
 library(xlsx)
-library(ggplot2)
 
 
 # Basic functions ------------------------------------------------------------------------

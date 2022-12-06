@@ -39,7 +39,7 @@ ui <- fluidPage(
                    choices = list("Madi" = 1, "Riss" = 2), selected = 1),
       conditionalPanel(
         condition = "input.MPCG == 1",
-        radioButtons("MPreports", "Report graphs y-axis format", choices = list("Date" = 1, "Text" = 2), selected = 1)
+        radioButtons("MPreports", "Report graphs x-axis format", choices = list("Date" = 1, "Text" = 2), selected = 1)
       ),
       downloadButton("downloadData", "Create sleep report"),
       width = 3
