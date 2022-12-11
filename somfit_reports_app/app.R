@@ -27,7 +27,7 @@ ui <- fluidPage(
       
       fileInput("file", 
                 "Select the files you want to analyse",
-                multiple = T,
+                multiple = TRUE,
                 accept = ".rtf"),
       tags$hr(),
       uiOutput("subjectDropdown"),
@@ -47,9 +47,9 @@ ui <- fluidPage(
     
     # Performance metrics table and graphs of each rep
     mainPanel(
-      uiOutput('subName'),
-      tableOutput('results'),
-      uiOutput('plotTabs'),
+      uiOutput("subName"),
+      tableOutput("results"),
+      uiOutput("plotTabs"),
       width = 9
     )
   )
@@ -58,7 +58,7 @@ ui <- fluidPage(
 # Server logic ---------------------------------------------------------------------------
 server <- function(input, output) {
   # remove default input file size restriction (increase to 30MB)
-  options(shiny.maxRequestSize = 30*1024^2)
+  options(shiny.maxRequestSize = 30 * 1024^2)
   # Subject names
   subjects <- reactive({
     if (is.null(input$file)) {
@@ -66,7 +66,7 @@ server <- function(input, output) {
     } else {
       # extract subject names from RTF files
       subjects <- subNames(input$file$datapath, input$file$name)
-      sNames <- as.list(unique(subjects[,2]))
+      sNames <- as.list(unique(subjects[, 2]))
     }
     return(sNames)
   })
@@ -79,8 +79,8 @@ server <- function(input, output) {
   # Load files into workspace
   getData <- reactive({
     if (input$subSelect != "" && !is.null(input$subSelect)) {
-      i <- grep(input$subSelect, subNames(input$file$datapath,input$file$name)[,2])
-      data <- importFiles(input$file$datapath[i],input$file$name[i],input$MPCG) # import and prepare files
+      i <- grep(input$subSelect, subNames(input$file$datapath, input$file$name)[, 2])
+      data <- importFiles(input$file$datapath[i], input$file$name[i], input$MPCG) # import and prepare files
       data <- sleepData(data, input$rsn, input$nse) # calculate sleep metrics
       return(data)
     }
@@ -88,7 +88,7 @@ server <- function(input, output) {
   
   # Summary table and plots
   output$subName <- renderPrint(h3(input$subSelect))
-  output$results <- renderTable(getData()$dex[,1:3], rownames = T)
+  output$results <- renderTable(getData()$dex[, 1:3], rownames = TRUE)
   output$plotTabs <- renderUI({
     if (input$subSelect != "" && !is.null(input$subSelect)) {
       tabsetPanel(type = "tabs",
@@ -108,17 +108,17 @@ server <- function(input, output) {
   # Report generation
   output$downloadData <- downloadHandler(
     filename = function() {
-      paste0(input$subSelect,'_somfit-report.xlsx')
+      paste0(input$subSelect, "_somfit-report.xlsx")
     },
     content = function(file) {
       if (input$MPCG == 1) {
         if (input$MPreports == 1) {
-          temp <- './www/Report template_somfit_MP.xlsx'
+          temp <- "./www/Report template_somfit_MP.xlsx"
         } else if (input$MPreports == 2) {
-          temp <- './www/Report template_somfit_MP-TA.xlsx'
+          temp <- "./www/Report template_somfit_MP-TA.xlsx"
         }
       } else if (input$MPCG == 2) {
-        temp <- './www/Report template_somfit_CG.xlsx'
+        temp <- "./www/Report template_somfit_CG.xlsx"
       }
       saveWorkbook(sleepReport(getData(), temp), file = file)
     }
