@@ -27,7 +27,7 @@ ui <- fluidPage(
       
       fileInput("file", 
                 "Select the files you want to analyse",
-                multiple = T,
+                multiple = TRUE,
                 accept = c("text/csv",
                            "text/comma-separated-values,text/plain",
                            ".csv")),
@@ -43,22 +43,22 @@ ui <- fluidPage(
       # textInput("tzc", "... collected", value = "Enter text..."),
       # textInput("tzd", "... downloaded", value = "Enter text..."),
       # p("E.g.: Australia/Brisbane"),
-      # HTML("<p>Click <a href='https://en.wikipedia.org/wiki/List_of_tz_database_time_zones'>here</a> for a list of time zones</p>"),
+      # HTML("<p>Click <a href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">here</a> for a list of time zones</p>"),
       
       # create sleep reports
       # fileInput("template", 
       #           "OPTIONAL: Select sleep report template file",
-      #           multiple = F,
+      #           multiple = FALSE,
       #           accept = c(".xlsx")),
-      checkboxInput("SQRtemp", label = "Include chart for sleep quality rating in report", value = F),
+      checkboxInput("SQRtemp", label = "Include chart for sleep quality rating in report", value = FALSE),
       downloadButton("downloadData", "Create sleep report")
     ),
     
     # Performance metrics table and graphs of each rep
     mainPanel(
-      uiOutput('subName'),
-      tableOutput('results'),
-      uiOutput('plotTabs')
+      uiOutput("subName"),
+      tableOutput("results"),
+      uiOutput("plotTabs")
     )
   )
 )
@@ -66,18 +66,18 @@ ui <- fluidPage(
 # Server logic ---------------------------------------------------------------------------
 server <- function(input, output) {
   # remove default input file size restriction (increase to 30MB)
-  options(shiny.maxRequestSize = 30*1024^2)
+  options(shiny.maxRequestSize = 30 * 1024^2)
   # Subject names
   subjects <- reactive({
     if (is.null(input$file)) {
       subjects <- ""
     } else {
       # remove numbers and punctuation from filenames
-      # subjects <- unique(gsub('[[:digit:]]+', '', sub("([A-Za-z]+_[A-Za-z0-9]+).*", "\\1", basename(input$file$name))))
+      # subjects <- unique(gsub("[[:digit:]]+", "", sub("([A-Za-z]+_[A-Za-z0-9]+).*", "\\1", basename(input$file$name))))
       subjects <- unique(sub("^([^_]*_[^_]*).*", "\\1", basename(input$file$name)))
       for (s in 1:length(subjects)) {
-        if (grepl("_",substr(subjects[s],nchar(subjects[s]),nchar(subjects[s])))) {
-          subjects[s] <- gsub('[[:punct:]]', '', subjects[s])
+        if (grepl("_", substr(subjects[s], nchar(subjects[s]), nchar(subjects[s])))) {
+          subjects[s] <- gsub("[[:punct:]]", "", subjects[s])
         }
       }
       subjects <- as.list(subjects)
@@ -94,7 +94,7 @@ server <- function(input, output) {
   getData <- reactive({
     if (input$subSelect != "" && !is.null(input$subSelect)) {
       i <- grep(input$subSelect, input$file$name)
-      data <- importFiles(input$file$datapath[i],input$file$name[i]) # import and prepare files
+      data <- importFiles(input$file$datapath[i], input$file$name[i]) # import and prepare files
       data <- sleepData(data, input$rsn, input$nse) # calculate sleep metrics
       return(data)
     }
@@ -102,7 +102,7 @@ server <- function(input, output) {
   
   # Summary table and plots
   output$subName <- renderPrint(h3(input$subSelect))
-  output$results <- renderTable(getData()$dex[,1:3], rownames = T)
+  output$results <- renderTable(getData()$dex[, 1:3], rownames = TRUE)
   output$plotTabs <- renderUI({
     if (input$subSelect != "" && !is.null(input$subSelect)) {
       tabsetPanel(type = "tabs",
@@ -122,13 +122,13 @@ server <- function(input, output) {
   # Report generation
   output$downloadData <- downloadHandler(
     filename = function() {
-      paste0(input$subSelect,'_sleep-report.xlsx')
+      paste0(input$subSelect, "_sleep-report.xlsx")
     },
     content = function(file) {
       if (input$SQRtemp) {
-        temp <- './www/Report template-SQR.xlsx'
+        temp <- "./www/Report template-SQR.xlsx"
       } else {
-        temp <- './www/Report template.xlsx'
+        temp <- "./www/Report template.xlsx"
       }
       saveWorkbook(sleepReport(getData(), temp), file = file)
     }

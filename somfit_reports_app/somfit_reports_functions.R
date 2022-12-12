@@ -70,18 +70,11 @@ rtf2df <- function(file) {
   df <- data.frame(matrix(unlist(df), nrow = length(df), byrow = TRUE), stringsAsFactors = FALSE)
   colnames(df) <- df[1, ]
   df <- df[-1, ]
-  # find header rows
-  df[df == " "] <- "" # change cells with space to empty cells
-  hd <- which(apply(df[, 2:4], 1, function(x) all(x == "")))
-  # split dataframe by header rows
-  df <- split(df, cumsum(1:nrow(df) %in% as.numeric(hd)))
-  names(df) <- lapply(df, "[[", 1,1)
-  df <- lapply(df, function(x) x[-1, ])
 }
 
 # retrieve and convert values
-somfind <- function(data, value, table, proc = NULL) {
-  rv <- data[[table]]$`Metric Value`[data[[table]]$`Metric Name` == value]
+somfind <- function(data, value, proc = NULL) {
+  rv <- data$`Metric Value`[data$`Metric Name` == value]
   if (rv == "-" || rv == "- " || identical(rv, integer(0))) {
     rv <- NA
   } else {
@@ -96,86 +89,86 @@ somfind <- function(data, value, table, proc = NULL) {
 sleepMetrics_MP <- function(data) {
   df <- list()
   # start date
-  df$`Start date` <- sDate <- somfind(data, "Study Date", "Referrer", function(x) as.Date(x, format = "%d/%m/%Y"))
+  df$`Start date` <- sDate <- somfind(data, "Study Date", function(x) as.Date(x, format = "%d/%m/%Y"))
   # EEG impedence (right and left)
-  df$`EEG impedance (right)` <- somfind(data, "EEG Impedance \u2013 Right Rating", "Study Quality")
-  df$`EEG impedance (left)` <- somfind(data, "EEG Impedance \u2013 Left Rating", "Study Quality")
+  df$`EEG impedance (right)` <- somfind(data, "EEG Impedance \u2013 Right Rating")
+  df$`EEG impedance (left)` <- somfind(data, "EEG Impedance \u2013 Left Rating")
   # Total data received - value (%) and rating
-  df$`Total data received (%)` <- somfind(data,"Total Data Received", "Study Quality", as.numeric)
-  df$`Total data received (rating)`  <- somfind(data, "Total Data Received Rating", "Study Quality")
+  df$`Total data received (%)` <- somfind(data,"Total Data Received", as.numeric)
+  df$`Total data received (rating)`  <- somfind(data, "Total Data Received Rating")
   # total scorable EEG - value (%) and rating
-  df$`Total scorable EEG (%)` <- somfind(data, "Total Scorable EEG", "Study Quality", as.numeric)
-  df$`Total scorable EEG (rating)` <- somfind(data, "Total Scorable EEG Rating", "Study Quality")
+  df$`Total scorable EEG (%)` <- somfind(data, "Total Scorable EEG", as.numeric)
+  df$`Total scorable EEG (rating)` <- somfind(data, "Total Scorable EEG Rating")
   # Somfit battery - starting level
-  df$`Somfit battery start level (%)` <- somfind(data, "Somfit Start Battery Level ", "Study Quality", as.numeric)
+  df$`Somfit battery start level (%)` <- somfind(data, "Somfit Start Battery Level ", as.numeric)
   # phone start and end battery level (%)
-  df$`Phone battery start level (%)` <- somfind(data, "Phone Start Battery Level", "Device", as.numeric)
-  df$`Phone battery end level (%)` <- somfind(data, "Phone End Battery Level", "Device", as.numeric)
+  df$`Phone battery start level (%)` <- somfind(data, "Phone Start Battery Level", as.numeric)
+  df$`Phone battery end level (%)` <- somfind(data, "Phone End Battery Level", as.numeric)
   # Somfit device
-  df$`Somfit device` <- somfind(data, "Somfit Device", "Device")
+  df$`Somfit device` <- somfind(data, "Somfit Device")
   # app start and end date/time
-  df$`App start date/time` <- somfind(data, "App Start Date/Time", "Device", 
+  df$`App start date/time` <- somfind(data, "App Start Date/Time", 
                                       function(x) as.POSIXct(x, format = "%Y/%m/%d %H-%M-%S", tz = "GMT"))
-  df$`App end date/time` <- somfind(data, "App End Date/Time ", "Device", 
+  df$`App end date/time` <- somfind(data, "App End Date/Time ", 
                                     function(x) as.POSIXct(x, format = "%Y/%m/%d %H:%M:%S", tz = "GMT"))
   # start recording
-  sr <- somfind(data, "Start Recording", "Referrer", function(x) as.POSIXct(x, format = "%H:%M:%S", tz = "GMT"))
+  sr <- somfind(data, "Start Recording", function(x) as.POSIXct(x, format = "%H:%M:%S", tz = "GMT"))
   if (as.numeric(julian(sr)) - as.numeric(Sys.Date()) < 0.5) {
     df$`Start date` <- sDate <- sDate - 1
   }
   df$`Start recording` <- sr <- as.POSIXct(sub("\\S+", sDate, sr), tz = "GMT")
   # end recording
-  er <- somfind(data, "Stop Recording", "Referrer", function(x) as.POSIXct(x, format = "%H:%M:%S"))
+  er <- somfind(data, "Stop Recording", function(x) as.POSIXct(x, format = "%H:%M:%S"))
   df$`End recording` <- er <- as.POSIXct(sub("\\S+", sDate + 1, er), tz = "GMT")
   # lights out/on
-  df$`Lights out` <- sr + somfind(data, "Lights Out Time","Sleep", as.numeric)
-  df$`Lights on` <- sr + somfind(data, "Lights On Time", "Sleep", as.numeric)
+  df$`Lights out` <- sr + somfind(data, "Lights Out Time", as.numeric)
+  df$`Lights on` <- sr + somfind(data, "Lights On Time", as.numeric)
   # sleep onset/offset
-  df$`Sleep onset` <- sr + somfind(data, "Sleep Onset", "Sleep", as.numeric)
-  df$`Sleep offset` <- sr + somfind(data, "Sleep Offset", "Sleep", as.numeric)
+  df$`Sleep onset` <- sr + somfind(data, "Sleep Onset", as.numeric)
+  df$`Sleep offset` <- sr + somfind(data, "Sleep Offset", as.numeric)
   # total sleep time
-  df$`Total sleep time (min)` <- somfind(data, "Total sleep time (TST)", "Sleep", function(x) as.numeric(x) %>% `/`(60))
+  df$`Total sleep time (min)` <- somfind(data, "Total sleep time (TST)", function(x) as.numeric(x) %>% `/`(60))
   # sleep latency
-  df$`Sleep latency (min)` <- somfind(data, "Sleep Latency", "Sleep", function(x) as.numeric(x) %>% `/`(60))
+  df$`Sleep latency (min)` <- somfind(data, "Sleep Latency", function(x) as.numeric(x) %>% `/`(60))
   # WASO
-  df$`WASO (min)` <- somfind(data, "Wake after sleep onset (WASO)", "Sleep", function(x) as.numeric(x) %>% `/`(60))
+  df$`WASO (min)` <- somfind(data, "Wake after sleep onset (WASO)", function(x) as.numeric(x) %>% `/`(60))
   # sleep efficiency
-  df$`Sleep efficiency (%)` <- somfind(data, "Sleep efficiency", "Sleep", as.numeric)
+  df$`Sleep efficiency (%)` <- somfind(data, "Sleep efficiency", as.numeric)
   # sleep availability
-  df$`Sleep availability time (min)` <- somfind(data, "Total sleep period", "Sleep", function(x) as.numeric(x) %>% `/`(60))
-  df$`Time available for sleep (min)` <- somfind(data, "Time available for sleep", "Sleep", function(x) as.numeric(x) %>% `/`(60))
-  df$`Total recording time (min)` <- somfind(data, "Total Recording Time (TRT)", "Referrer", function(x) as.numeric(x) %>% `/`(60))
+  df$`Sleep availability time (min)` <- somfind(data, "Total sleep period", function(x) as.numeric(x) %>% `/`(60))
+  df$`Time available for sleep (min)` <- somfind(data, "Time available for sleep", function(x) as.numeric(x) %>% `/`(60))
+  df$`Total recording time (min)` <- somfind(data, "Total Recording Time (TRT)", function(x) as.numeric(x) %>% `/`(60))
   # sleep stages
   # time (mins)
   stages <- c("Time Awake during sleep Period","N1 Sleep Time","N2 Sleep Time","N1 Sleep Time","N3 Sleep Time",
               "REM Sleep Time","Unsure Time")
   cnames <- c("Wake (min)","N1 (min)","N2 (min)","N1/N2 (min)","N3 (min)","REM (min)","Unscored (min)")
   for (n in 1:length(stages)) {
-    df[[cnames[n]]] <- somfind(data,stages[n], "Sleep", function(x) as.numeric(x) %>% `/`(60))
+    df[[cnames[n]]] <- somfind(data,stages[n], function(x) as.numeric(x) %>% `/`(60))
   }
   df$`N1/N2 (min)` <- df$`N1/N2 (min)` + df$`N2 (min)`
   # percentage
-  df$`Wake (%)` <- somfind(data, "Total Recording Time (TRT)", "Referrer", as.numeric) / df$`Time available for sleep (min)` * 100
+  df$`Wake (%)` <- somfind(data, "Total Recording Time (TRT)", as.numeric) / df$`Time available for sleep (min)` * 100
   stages <- c("Stage 1 / N1 %","Stage 2 / N2 %","Stage 1 / N1 %","Stage 3 / N3 %","REM sleep %")
   cnames <- c("N1 (%)","N2 (%)","N1/N2 (%)","N3 (%)","REM (%)")
   for (n in 1:length(stages)) {
-    df[[cnames[n]]] <- somfind(data, stages[n], "Sleep", as.numeric)
+    df[[cnames[n]]] <- somfind(data, stages[n], as.numeric)
   }
   df$`N1/N2 (%)` <- df$`N1/N2 (%)` + df$`N2 (%)`
   df$`Unscored (%)` <- df$`Unscored (min)` / df$`Time available for sleep (min)` * 100
   # awakenings
-  df$`Awakenings (total)` <- somfind(data, "Number of awakenings", "Sleep", as.numeric)
-  df$`Awakenings (per hour)` <- somfind(data, "Awakenings Index", "Sleep", as.numeric)
+  df$`Awakenings (total)` <- somfind(data, "Number of awakenings", as.numeric)
+  df$`Awakenings (per hour)` <- somfind(data, "Awakenings Index", as.numeric)
   # pAHI
-  df$pAHI <- somfind(data, "pAHI Total", "Respiratory (PAT / Snore)", as.numeric)
+  df$pAHI <- somfind(data, "pAHI Total", as.numeric)
   # SpO2
-  df$`SpO2 (awake)` <- somfind(data, "SpO2 awake average", "SpO2", as.numeric)
-  df$`SpO2 (sleep)` <- somfind(data, "Average SpO2 (Sleep)", "SpO2", as.numeric)
+  df$`SpO2 (awake)` <- somfind(data, "SpO2 awake average", as.numeric)
+  df$`SpO2 (sleep)` <- somfind(data, "Average SpO2 (Sleep)", as.numeric)
   # HRV and pulse
-  df$HRV <- somfind(data, "HRV (Average)", "Pulse Rate / Respiratory Rate / HRV", as.numeric)
-  df$`Pulse (mean)` <- somfind(data, "Pulse Rate (Average)", "Pulse Rate / Respiratory Rate / HRV", as.numeric)
-  df$`Pulse (min)` <- somfind(data, "Pulse Rate (Lowest)", "Pulse Rate / Respiratory Rate / HRV", as.numeric)
-  df$`Pulse (max)` <- somfind(data, "Pulse Rate (Highest)", "Pulse Rate / Respiratory Rate / HRV", as.numeric)
+  df$HRV <- somfind(data, "HRV (Average)", as.numeric)
+  df$`Pulse (mean)` <- somfind(data, "Pulse Rate (Average)", as.numeric)
+  df$`Pulse (min)` <- somfind(data, "Pulse Rate (Lowest)", as.numeric)
+  df$`Pulse (max)` <- somfind(data, "Pulse Rate (Highest)", as.numeric)
   
   out <- data.frame(df, check.names = FALSE)
 }
@@ -184,67 +177,67 @@ sleepMetrics_MP <- function(data) {
 sleepMetrics_CG <- function(data) {
   df <- list()
   # start date
-  df$`Start date` <- sDate <- somfind(data, "Study Date", "Referrer", function(x) as.Date(x,format = "%d/%m/%Y"))
+  df$`Start date` <- sDate <- somfind(data, "Study Date", function(x) as.Date(x,format = "%d/%m/%Y"))
   # start recording
-  sr <- somfind(data, "Start Recording", "Referrer", function(x) as.POSIXct(x, format = "%H:%M:%S", tz = "GMT"))
+  sr <- somfind(data, "Start Recording", function(x) as.POSIXct(x, format = "%H:%M:%S", tz = "GMT"))
   if (as.numeric(julian(sr)) - as.numeric(Sys.Date()) < 0.5) {
     df$`Start date` <- sDate <- sDate - 1
   }
   df$`Start recording` <- sr <- as.POSIXct(sub("\\S+", sDate, sr), tz = "GMT")
   # end recording
-  er <- somfind(data, "Stop Recording", "Referrer", function(x) as.POSIXct(x, format = "%H:%M:%S"))
+  er <- somfind(data, "Stop Recording", function(x) as.POSIXct(x, format = "%H:%M:%S"))
   df$`End recording` <- er <- as.POSIXct(sub("\\S+", sDate + 1, er), tz = "GMT")
   # lights out/on
-  df$`Lights out` <- sr + somfind(data, "Lights Out Time", "Sleep", as.numeric)
-  df$`Lights on` <- sr + somfind(data, "Lights On Time", "Sleep", as.numeric)
+  df$`Lights out` <- sr + somfind(data, "Lights Out Time", as.numeric)
+  df$`Lights on` <- sr + somfind(data, "Lights On Time", as.numeric)
   # sleep onset/offset
-  df$`Sleep onset` <- sr + somfind(data, "Sleep Onset", "Sleep", as.numeric)
-  df$`Sleep offset` <- sr + somfind(data, "Sleep Offset", "Sleep", as.numeric)
+  df$`Sleep onset` <- sr + somfind(data, "Sleep Onset", as.numeric)
+  df$`Sleep offset` <- sr + somfind(data, "Sleep Offset", as.numeric)
   # total sleep time
-  df$`Total sleep time (min)` <- somfind(data, "Total sleep time (TST)", "Sleep", function(x) as.numeric(x) %>% `/`(60))
+  df$`Total sleep time (min)` <- somfind(data, "Total sleep time (TST)", function(x) as.numeric(x) %>% `/`(60))
   # sleep latency
-  df$`Sleep latency (min)` <- somfind(data, "Sleep Latency", "Sleep", function(x) as.numeric(x) %>% `/`(60))
-  df$`Sleep latency to 10 min (min)` <- somfind(data, " Latency (to 10 min sleep)", "Sleep", function(x) as.numeric(x) %>% `/`(60))
-  df$`REM latency (min)` <- somfind(data," REM latency","Sleep",function(x) as.numeric(x) %>% `/`(60))
+  df$`Sleep latency (min)` <- somfind(data, "Sleep Latency", function(x) as.numeric(x) %>% `/`(60))
+  df$`Sleep latency to 10 min (min)` <- somfind(data, " Latency (to 10 min sleep)", function(x) as.numeric(x) %>% `/`(60))
+  df$`REM latency (min)` <- somfind(data, " REM latency", function(x) as.numeric(x) %>% `/`(60))
   # WASO
-  df$`WASO (min)` <- somfind(data, "Wake after sleep onset (WASO)", "Sleep", function(x) as.numeric(x) %>% `/`(60))
+  df$`WASO (min)` <- somfind(data, "Wake after sleep onset (WASO)", function(x) as.numeric(x) %>% `/`(60))
   # sleep efficiency
-  df$`Sleep efficiency (%)` <- somfind(data, "Sleep efficiency", "Sleep", as.numeric)
+  df$`Sleep efficiency (%)` <- somfind(data, "Sleep efficiency", as.numeric)
   # sleep availability
-  df$`Sleep availability time (min)` <- somfind(data, "Total sleep period", "Sleep", function(x) as.numeric(x) %>% `/`(60))
-  df$`Time available for sleep (min)` <- somfind(data, "Time available for sleep", "Sleep", function(x) as.numeric(x) %>% `/`(60))
-  df$`Total recording time (min)` <- somfind(data, "Total Recording Time (TRT)", "Referrer", function(x) as.numeric(x) %>% `/`(60))
+  df$`Sleep availability time (min)` <- somfind(data, "Total sleep period", function(x) as.numeric(x) %>% `/`(60))
+  df$`Time available for sleep (min)` <- somfind(data, "Time available for sleep", function(x) as.numeric(x) %>% `/`(60))
+  df$`Total recording time (min)` <- somfind(data, "Total Recording Time (TRT)", function(x) as.numeric(x) %>% `/`(60))
   # sleep stages
   # time (mins)
   stages <- c("N1 Sleep Time","N2 Sleep Time","N1 Sleep Time","N3 Sleep Time","REM Sleep Time","NREM Sleep Time",
               "Unsure Time")
   cnames <- c("N1 (min)","N2 (min)","N1/N2 (min)","N3 (min)","REM (min)","NREM (min)","Unscored (min)")
   for (n in 1:length(stages)) {
-    df[[cnames[n]]] <- somfind(data, stages[n], "Sleep", function(x) as.numeric(x) %>% `/`(60))
+    df[[cnames[n]]] <- somfind(data, stages[n], function(x) as.numeric(x) %>% `/`(60))
   }
   df$`N1/N2 (min)` <- df$`N1/N2 (min)` + df$`N2 (min)`
   # percentage
   stages <- c("Stage 1 / N1 %","Stage 2 / N2 %","Stage 1 / N1 %","Stage 3 / N3 %","REM sleep %","NREM sleep %")
   cnames <- c("N1 (%)","N2 (%)","N1/N2 (%)","N3 (%)","REM (%)","NREM (%)")
   for (n in 1:length(stages)) {
-    df[[cnames[n]]] <- somfind(data, stages[n], "Sleep", as.numeric)
+    df[[cnames[n]]] <- somfind(data, stages[n], as.numeric)
   }
   df$`N1/N2 (%)` <- df$`N1/N2 (%)` + df$`N2 (%)`
   # awakenings
-  df$`Awakenings (total)` <- somfind(data, "Number of awakenings", "Sleep", as.numeric)
+  df$`Awakenings (total)` <- somfind(data, "Number of awakenings", as.numeric)
   # pAHI
-  df$`Resp events` <- somfind(data, "Qty Resp Events Total", "Respiratory (PAT / Snore)", as.numeric)
-  df$pAHI <- somfind(data, "pAHI Total", "Respiratory (PAT / Snore)", as.numeric)
+  df$`Resp events` <- somfind(data, "Qty Resp Events Total", as.numeric)
+  df$pAHI <- somfind(data, "pAHI Total", as.numeric)
   # SpO2
-  df$`Mean SpO2 (sleep)` <- somfind(data, "Average SpO2 (Sleep)", "SpO2", as.numeric)
-  df$`Min SpO2 (sleep)` <- somfind(data, "Lowest SpO2 (Sleep)","SpO2", as.numeric)
-  df$`Mean desat (sleep)` <- somfind(data, "Average Desat (sleep)","SpO2", as.numeric)
-  df$`Mean desat with resp events` <- somfind(data, "Average desaturation with respiratory events", "SpO2" ,as.numeric)
+  df$`Mean SpO2 (sleep)` <- somfind(data, "Average SpO2 (Sleep)", as.numeric)
+  df$`Min SpO2 (sleep)` <- somfind(data, "Lowest SpO2 (Sleep)", as.numeric)
+  df$`Mean desat (sleep)` <- somfind(data, "Average Desat (sleep)", as.numeric)
+  df$`Mean desat with resp events` <- somfind(data, "Average desaturation with respiratory events", as.numeric)
   # HRV and pulse
-  df$HRV <- somfind(data,"HRV (Average)", "Pulse Rate / Respiratory Rate / HRV", as.numeric)
-  df$`Pulse (mean)` <- somfind(data, "Pulse Rate (Average)", "Pulse Rate / Respiratory Rate / HRV", as.numeric)
-  df$`Pulse (min)` <- somfind(data, "Pulse Rate (Lowest)", "Pulse Rate / Respiratory Rate / HRV", as.numeric)
-  df$`Pulse (max)` <- somfind(data, "Pulse Rate (Highest)", "Pulse Rate / Respiratory Rate / HRV", as.numeric)
+  df$HRV <- somfind(data,"HRV (Average)", as.numeric)
+  df$`Pulse (mean)` <- somfind(data, "Pulse Rate (Average)", as.numeric)
+  df$`Pulse (min)` <- somfind(data, "Pulse Rate (Lowest)", as.numeric)
+  df$`Pulse (max)` <- somfind(data, "Pulse Rate (Highest)", as.numeric)
   
   out <- data.frame(df, check.names = FALSE)
 }
@@ -278,7 +271,7 @@ subNames <- function(filepath, filename) {
     # Import RTF
     temp <- rtf2df(filepath[i])
     # Participant ID
-    subjects[i, 2] <- temp$Study$`Metric Value`[which(temp$Study$`Metric Name` == "URN")]
+    subjects[i, 2] <- temp$`Metric Value`[which(temp$`Metric Name` == "URN")]
   }
   return(subjects)
 }
@@ -293,7 +286,7 @@ importFiles <- function(filepath, filename, mpcg) {
     # Import RTF
     temp <- rtf2df(filepath[i])
     # Participant ID
-    subject <- temp$Study$`Metric Value`[which(temp$Study$`Metric Name` == "URN")]
+    subject <- temp$`Metric Value`[which(temp$`Metric Name` == "URN")]
     # Extract sleep metrics
     if (i > 1) {
       if (mpcg == 1) {
